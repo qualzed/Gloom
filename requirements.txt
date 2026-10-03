@@ -1,0 +1,6 @@
+glfw==2.10.2
+imgui==2.0.0
+pymem==1.14.0
+PyOpenGL==3.1.10
+pywin32==312
+Requests==2.34.2
