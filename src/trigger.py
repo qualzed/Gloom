@@ -12,7 +12,6 @@ HOLD_KEY = 0x06
 
 ctypes.windll.user32.SetProcessDPIAware()
 
-
 def get_game_size():
     hwnd = win32gui.FindWindow(None, "Counter-Strike 2")
     if not hwnd or win32gui.GetForegroundWindow() != hwnd:
@@ -29,7 +28,6 @@ def world_to_screen(m, x, y, z, width, height):
     sy = height / 2 - height / 2 * (m[4] * x + m[5] * y + m[6] * z + m[7]) / w
     return sx, sy
 
-
 def crosshair_on_head(matrix, pawn, width, height):
     scene = pm.read_longlong(pawn + m_pGameSceneNode)
     bones = pm.read_longlong(scene + m_modelState + 0x80)
@@ -40,16 +38,14 @@ def crosshair_on_head(matrix, pawn, width, height):
     if not center or not edge:
         return False
 
-    radius = abs(center[1] - edge[1]) + 1
+    radius = abs(center[1] - edge[1]) + 2
     distance = math.hypot(center[0] - width / 2, center[1] - height / 2)
     return distance <= radius
-
 
 def click():
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
     time.sleep(0.02)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
-
 
 def trigger():
     last_shot = 0.0

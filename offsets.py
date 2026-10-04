@@ -47,6 +47,9 @@ m_flFlashMaxAlpha = field('C_CSPlayerPawnBase', 'm_flFlashMaxAlpha')
 m_pCameraServices = field('C_BasePlayerPawn', 'm_pCameraServices')
 m_iFOV = field('CCSPlayerBase_CameraServices', 'm_iFOV')
 
+m_hActiveWeapon = field('CPlayer_WeaponServices', 'm_hActiveWeapon')
+m_pWeaponServices = field('C_BasePlayerPawn', 'm_pWeaponServices')
+
 m_AttributeManager = field('C_EconEntity', 'm_AttributeManager')
 m_Item = field('C_AttributeContainer', 'm_Item')
 m_iItemDefinitionIndex = field('C_EconItemView', 'm_iItemDefinitionIndex')

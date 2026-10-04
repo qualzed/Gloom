@@ -1,12 +1,14 @@
 import time
 from multiprocessing import Process
-from src import fov, antiflash, glow, entity, esp, trigger
+from src import fov, antiflash, glow, entity, esp, trigger, aim, person
 
 _esp: bool = True
 _fov: bool = False
 _antiflash: bool = True
 _glow: bool = False
 _trigger: bool = True
+_aim: bool = True
+_person: bool = True
 
 hooks = {}
 
@@ -45,6 +47,9 @@ if __name__ == "__main__":
 
     if _esp:
         createHook("esp", esp.main)
+
+    if _aim:
+        createHook("aim", aim.aim)
 
     if _trigger:
         createHook("trigger", trigger.trigger)

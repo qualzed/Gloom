@@ -6,6 +6,14 @@ from offsets import *
 
 STRIDE = 0x70
 
+names = {}
+
+def read_name(controller):
+    try:
+        return pm.read_string(controller + m_iszPlayerName, 32)
+    except Exception:
+        return "?"
+
 def init_entity_list():
     entities = []
 
@@ -45,6 +53,8 @@ def init_entity_list():
         if pm.read_int(pawn + m_iTeamNum) == local_team:
             continue
 
+        names[pawn] = read_name(controller)
+        entities.append(pawn)
         entities.append(pawn)
 
     return entities

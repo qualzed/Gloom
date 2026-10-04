@@ -78,12 +78,10 @@ def w2s(m, x, y, z):
     return (W / 2 + W / 2 * (m[0] * x + m[1] * y + m[2] * z + m[3]) / w,
             H / 2 - H / 2 * (m[4] * x + m[5] * y + m[6] * z + m[7]) / w)
 
-
 # --- state ---
 anim = {}
 last_time = time.perf_counter()
 reported = set()
-
 
 # --- player ---
 def draw_player(dl, pawn, matrix, local_team, dt):
@@ -116,6 +114,14 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     if r < 0 or l > W or b < 0 or t > H:
         return False
 
+    name = entity.names.get(pawn, "")
+    if name:
+        tw = imgui.calc_text_size(name)
+        nx = round((l + r) / 2 - tw.x / 2)
+        ny = round(t - tw.y - 4)
+        dl.add_text(nx + 1, ny + 1, rgba(0, 0, 0, 0.9), name)
+        dl.add_text(nx, ny, rgba(1, 1, 1), name)
+
     # animation
     hp_f, armor_f = clamp(hp / 100), clamp(armor / 100)
     st = anim.setdefault(pawn, [hp_f, hp_f, armor_f])
@@ -136,9 +142,6 @@ def draw_player(dl, pawn, matrix, local_team, dt):
         dl.add_line(*s, black, 3.0)
     for s in segs:
         dl.add_line(*s, rgba(*rgb), 1.0)
-
-    # name = pm.read_string(pawn + m_sSanitizedPlayerName)
-    # dl.add_text(x1 - 3 - size.x, ty, rgba(1, 1, 1), name) # Nick
 
     # render: health bar
     x2 = l - 5
@@ -161,7 +164,6 @@ def draw_player(dl, pawn, matrix, local_team, dt):
         dl.add_rect_filled(l, y1, r, y1 + 3, dark)
         dl.add_rect_filled(l, y1, l + (r - l) * st[2], y1 + 3, rgba(0.35, 0.65, 1.0))
     return True
-
 
 # --- frame ---
 def draw_frame(dl):
