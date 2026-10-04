@@ -223,7 +223,7 @@ def main():
             (glfw.show_window if active else glfw.hide_window)(window)
         if not active:
             glfw.poll_events()
-            time.sleep(0.05)
+            time.sleep(0.02)
             continue
 
         rect = game_rect()

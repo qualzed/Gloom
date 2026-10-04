@@ -6,7 +6,7 @@ _esp: bool = True
 _fov: bool = False
 _antiflash: bool = True
 _glow: bool = False
-_trigger: bool = True
+_trigger: bool = False
 _aim: bool = True
 _person: bool = True
 

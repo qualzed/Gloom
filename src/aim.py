@@ -1,5 +1,6 @@
 # Claude Code
 
+from colorama import Fore
 import math
 import struct
 import time
@@ -10,7 +11,7 @@ from offsets import *
 from src import entity
 
 TOGGLE_KEY = 0x05
-SMOOTH = 6.0
+SMOOTH = 8.0
 SENS = 1.0
 RADIUS = 0.2
 HEAD_BONE = 7
@@ -32,14 +33,24 @@ def world_to_screen(m, x, y, z, width, height):
 
 def head_position(pawn):
     scene = pm.read_longlong(pawn + m_pGameSceneNode)
+    if not scene:
+        return None
+
     bones = pm.read_longlong(scene + m_modelState + 0x80)
+    if not bones:
+        return None
+
     return struct.unpack("3f", pm.read_bytes(bones + HEAD_BONE * 0x20, 12))
 
 def find_target(matrix, width, height):
     best, best_distance = None, height * RADIUS
 
     for pawn in entity.init_entity_list():
-        x, y, z = head_position(pawn)
+        head = head_position(pawn)
+        if not head:
+            continue
+
+        x, y, z = head
         point = world_to_screen(matrix, x, y, z + 3, width, height)
         if not point:
             continue
@@ -76,5 +87,6 @@ def aim():
             target = find_target(matrix, *size)
             if target:
                 move_mouse(*target, size[1])
-        except Exception:
+        except Exception as e:
+            print(f"{Fore.RED}{e}")
             continue
