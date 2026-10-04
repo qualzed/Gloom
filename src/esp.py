@@ -137,6 +137,9 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     for s in segs:
         dl.add_line(*s, rgba(*rgb), 1.0)
 
+    # name = pm.read_string(pawn + m_sSanitizedPlayerName)
+    # dl.add_text(x1 - 3 - size.x, ty, rgba(1, 1, 1), name) # Nick
+
     # render: health bar
     x2 = l - 5
     x1 = x2 - 3

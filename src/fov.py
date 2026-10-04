@@ -10,13 +10,6 @@ def returnFOV():
     return fov
 
 def setFOV(fov: int, retry: bool = False):
-    if not retry:
-        print("Changing FOV..")
-
-    pm.write_uint(cameraServices + m_iFOV, fov)
-    time.sleep(0.03)
-    
-    if returnFOV() != fov:
-        setFOV(fov=fov, retry=True)
-    else:
-        print(f"FOV has been changed to {fov}!")
+    while 1:
+        pm.write_uint(cameraServices + m_iFOV, fov)
+        time.sleep(0.05)

@@ -40,6 +40,7 @@ m_vecAbsOrigin = field('CGameSceneNode', 'm_vecAbsOrigin')
 m_hPlayerPawn = field('CCSPlayerController', 'm_hPlayerPawn')
 m_iszPlayerName = field('CBasePlayerController', 'm_iszPlayerName')
 m_iDesiredFOV = field('CBasePlayerController', 'm_iDesiredFOV')
+m_sSanitizedPlayerName = field('CCSPlayerController', 'm_sSanitizedPlayerName')
 
 m_ArmorValue = field('C_CSPlayerPawn', 'm_ArmorValue')
 m_flFlashMaxAlpha = field('C_CSPlayerPawnBase', 'm_flFlashMaxAlpha')
