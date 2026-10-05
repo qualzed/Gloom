@@ -13,8 +13,9 @@ from src import entity
 TOGGLE_KEY = 0x05
 SMOOTH = 8.0
 SENS = 1.0
-RADIUS = 0.2
+RADIUS = 0.085
 HEAD_BONE = 7
+enabled = None
 
 def get_game_size():
     hwnd = win32gui.FindWindow(None, "Counter-Strike 2")
@@ -47,6 +48,7 @@ def find_target(matrix, width, height):
 
     for pawn in entity.init_entity_list():
         head = head_position(pawn)
+        
         if not head:
             continue
 
@@ -67,6 +69,7 @@ def move_mouse(dx, dy, height):
     win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, round(dx * scale), round(dy * scale), 0, 0)
 
 def aim():
+    global enabled
     enabled = False
     was_down = False
 
@@ -88,5 +91,5 @@ def aim():
             if target:
                 move_mouse(*target, size[1])
         except Exception as e:
-            print(f"{Fore.RED}{e}")
+            # print(f"{Fore.RED}{e}")
             continue

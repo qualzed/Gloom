@@ -24,11 +24,15 @@ def cs_offset(name):
 
 
 dwEntityList = 40982552
+dwGlobalVars = _client_offsets['dwGlobalVars']
 dwGameEntitySystem = _client_offsets['dwGameEntitySystem']
 dwLocalPlayerPawn = _client_offsets['dwLocalPlayerPawn']
 dwLocalPlayerController = _client_offsets['dwLocalPlayerController']
 dwViewMatrix = _client_offsets['dwViewMatrix']
+dwViewAngles = _client_offsets['dwViewAngles']
 dwPlantedC4 = _client_offsets['dwPlantedC4']
+dwWeaponC4 = _client_offsets['dwWeaponC4']
+dwGameRules = _client_offsets['dwGameRules']
 
 m_iTeamNum = field('C_BaseEntity', 'm_iTeamNum')
 m_lifeState = field('C_BaseEntity', 'm_lifeState')
@@ -57,6 +61,10 @@ m_iItemDefinitionIndex = field('C_EconItemView', 'm_iItemDefinitionIndex')
 m_flTimerLength = field('C_PlantedC4', 'm_flTimerLength')
 m_flDefuseLength = field('C_PlantedC4', 'm_flDefuseLength')
 m_bBeingDefused = field('C_PlantedC4', 'm_bBeingDefused')
+m_bBombTicking = field('C_PlantedC4', 'm_bBombTicking')
+m_bBombPlanted = field('C_C4', 'm_bBombPlanted')
+m_flC4Blow = field('C_PlantedC4', 'm_flC4Blow')
+m_nBombSite = field('C_PlantedC4', 'm_nBombSite')
 
 m_Glow = field('C_BaseModelEntity', 'm_Glow')
 m_iGlowType = field('CGlowProperty', 'm_iGlowType')

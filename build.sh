@@ -1,1 +1,1 @@
-python -m nuitka --onefile main.py
+python -m nuitka --standalone --onefile --mingw64 --lto=yes main.py

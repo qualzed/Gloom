@@ -3,7 +3,7 @@
 /main.build/
 /main.dist/
 /.venv/
-venv.sh
+venv.txt
 test.py
 buffer.txt
 main.exe

@@ -19,10 +19,8 @@ from offsets import *
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
 
-
 def game_hwnd():
     return win32gui.FindWindow(None, "Counter-Strike 2")
-
 
 def game_rect():
     hwnd = game_hwnd()
@@ -32,9 +30,7 @@ def game_rect():
     x, y = win32gui.ClientToScreen(hwnd, (0, 0))
     return x, y, w, h
 
-
 X, Y, W, H = game_rect()
-
 
 # --- attach ---
 print("Waiting for cs2.exe")
@@ -51,7 +47,6 @@ time.sleep(1)
 os.system("cls")
 print("ESP loaded")
 
-
 # --- helpers ---
 def clamp(v):
     return 0.0 if v < 0 else 1.0 if v > 1 else v
@@ -65,11 +60,19 @@ def approach(cur, target, speed, dt):
 def rgba(r, g, b, a=1.0):
     return imgui.get_color_u32_rgba(r, g, b, a)
 
-def hp_color(f):
+def hp_color(f, a=1.0):
     if f < 0.5:
-        return rgba(1.0, lerp(0.22, 0.82, f * 2), lerp(0.22, 0.20, f * 2))
+        k = f * 2
+        return rgba(1.0, lerp(0.28, 0.80, k), lerp(0.32, 0.28, k), a)
     k = (f - 0.5) * 2
-    return rgba(lerp(1.0, 0.25, k), lerp(0.82, 0.95, k), lerp(0.20, 0.40, k))
+    return rgba(lerp(1.0, 0.32, k), lerp(0.80, 0.92, k), lerp(0.28, 0.55, k), a)
+
+def tint(rgb, k):
+    return tuple(lerp(1.0, c, k) for c in rgb)
+
+def draw_text(dl, x, y, text, color):
+    dl.add_text(x + 1, y + 1, rgba(0, 0, 0, 0.6), text)
+    dl.add_text(x, y, rgba(*color), text)
 
 def w2s(m, x, y, z):
     w = m[12] * x + m[13] * y + m[14] * z + m[15]
@@ -83,6 +86,50 @@ anim = {}
 last_time = time.perf_counter()
 reported = set()
 
+# --- skeleton (bone pairs) ---
+SKELETON_LINKS = (
+    (1, 3), (3, 4), (4, 23), (23, 6), (6, 7),
+    (6, 9), (9, 10), (10, 11),
+    (6, 13), (13, 14), (14, 15),
+    (1, 17), (17, 18), (18, 19),
+    (1, 20), (20, 21), (21, 22),
+)
+SKELETON_BONES = {i for link in SKELETON_LINKS for i in link}
+
+# --- weapons ---
+m_pWeaponServices = field('C_BasePlayerPawn', 'm_pWeaponServices')
+m_hActiveWeapon = field('CPlayer_WeaponServices', 'm_hActiveWeapon')
+
+WEAPONS = {
+    1: "Desert Eagle", 2: "Dual Berettas", 3: "Five-SeveN", 4: "Glock-18",
+    7: "AK-47", 8: "AUG", 9: "AWP", 10: "FAMAS", 11: "G3SG1", 13: "Galil AR",
+    14: "M249", 16: "M4A4", 17: "MAC-10", 19: "P90", 23: "MP5-SD", 24: "UMP-45",
+    25: "XM1014", 26: "PP-Bizon", 27: "MAG-7", 28: "Negev", 29: "Sawed-Off",
+    30: "Tec-9", 31: "Zeus x27", 32: "P2000", 33: "MP7", 34: "MP9", 35: "Nova",
+    36: "P250", 38: "SCAR-20", 39: "SG 553", 40: "SSG 08", 42: "Knife",
+    43: "Flashbang", 44: "HE Grenade", 45: "Smoke", 46: "Molotov", 47: "Decoy",
+    48: "Incendiary", 49: "C4", 59: "Knife", 60: "M4A1-S", 61: "USP-S",
+    63: "CZ75-Auto", 64: "R8 Revolver",
+}
+
+
+def weapon_name(pawn):
+    try:
+        services = pm.read_longlong(pawn + m_pWeaponServices)
+        handle = pm.read_int(services + m_hActiveWeapon) & 0xFFFFFFFF
+        if not services or handle == 0xFFFFFFFF:
+            return ""
+
+        index = handle & 0x7FFF
+        entity_list = pm.read_longlong(client + dwEntityList)
+        entry = pm.read_longlong(entity_list + 0x8 * (index >> 9) + 0x10)
+        weapon = pm.read_longlong(entry + 0x70 * (index & 0x1FF))
+        item = pm.read_ushort(weapon + m_AttributeManager + m_Item + m_iItemDefinitionIndex)
+    except Exception:
+        return ""
+
+    return "Knife" if item >= 500 else WEAPONS.get(item, "")
+
 # --- player ---
 def draw_player(dl, pawn, matrix, local_team, dt):
     # read
@@ -90,15 +137,20 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     if hp <= 0 or pm.read_uchar(pawn + m_lifeState):
         return False
 
-    armor = max(0, pm.read_int(pawn + m_ArmorValue))
     team = pm.read_int(pawn + m_iTeamNum)
 
-    # bones: 0 origin, 7 head
+    # bones: 0 origin, 7 head, rest skeleton
     scene = pm.read_longlong(pawn + m_pGameSceneNode)
+    if not scene:
+        return False
     bones = pm.read_longlong(scene + m_modelState + 0x80)
-    data = pm.read_bytes(bones, 8 * 0x20)
+    if not bones:
+        return False
+
+    data = pm.read_bytes(bones, 24 * 0x20)
     ox, oy, oz = struct.unpack_from("3f", data, 0)
-    head_z = struct.unpack_from("f", data, 7 * 0x20 + 8)[0] + 8
+    hx, hy, hz = struct.unpack_from("3f", data, 7 * 0x20)
+    head_z = hz + 8
 
     # screen position
     top, bottom = w2s(matrix, ox, oy, head_z), w2s(matrix, ox, oy, oz)
@@ -114,55 +166,80 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     if r < 0 or l > W or b < 0 or t > H:
         return False
 
+    # animation
+    hp_f = clamp(hp / 100)
+    st = anim.setdefault(pawn, [hp_f, hp_f])
+    st[0] = approach(st[0], hp_f, 10, dt)
+    st[1] = approach(max(st[1], st[0]), st[0], 2.5, dt)
+
+    # colors
+    rgb = (0.36, 0.78, 1.00) if team == local_team else (1.00, 0.36, 0.40)
+    accent = rgba(*rgb, 0.95)
+    glow = rgba(*rgb, 0.08)
+    shade = rgba(0, 0, 0, 0.22)
+    panel = rgba(0.05, 0.05, 0.06, 0.55)
+    bone_rgb = tint(rgb, 0.45)
+
+    # render: name
     name = entity.names.get(pawn, "")
     if name:
         tw = imgui.calc_text_size(name)
-        nx = round((l + r) / 2 - tw.x / 2)
-        ny = round(t - tw.y - 4)
-        dl.add_text(nx + 1, ny + 1, rgba(0, 0, 0, 0.9), name)
-        dl.add_text(nx, ny, rgba(1, 1, 1), name)
-
-    # animation
-    hp_f, armor_f = clamp(hp / 100), clamp(armor / 100)
-    st = anim.setdefault(pawn, [hp_f, hp_f, armor_f])
-    st[0] = approach(st[0], hp_f, 10, dt)
-    st[2] = approach(st[2], armor_f, 10, dt)
-    st[1] = approach(max(st[1], st[0]), st[0], 2.5, dt)
-
-    black, dark = rgba(0, 0, 0, 0.85), rgba(0.1, 0.1, 0.1, 0.9)
+        draw_text(dl, round((l + r) / 2 - tw.x / 2), round(t - tw.y - 5), name, (1, 1, 1, 0.95))
 
     # render: box
-    rgb = (0.35, 0.80, 1.00) if team == local_team else (1.00, 0.35, 0.35)
-    dl.add_rect_filled(l, t, r, b, rgba(*rgb, 0.07))
-    cw, ch = max(4, (r - l) * 0.28), max(4, h * 0.18)
+    for i in range(8):
+        y0, y1 = round(t + (b - t) * i / 8), round(t + (b - t) * (i + 1) / 8)
+        dl.add_rect_filled(l, y0, r, y1, rgba(*rgb, 0.015 + 0.012 * i))
+
+    cw, ch = max(4, (r - l) * 0.28), max(4, h * 0.16)
     segs = []
     for x, y, sx, sy in ((l, t, 1, 1), (r, t, -1, 1), (l, b, 1, -1), (r, b, -1, -1)):
         segs += [(x + .5, y + .5, x + .5 + sx * cw, y + .5), (x + .5, y + .5, x + .5, y + .5 + sy * ch)]
     for s in segs:
-        dl.add_line(*s, black, 3.0)
+        dl.add_line(*s, shade, 3.0)
     for s in segs:
-        dl.add_line(*s, rgba(*rgb), 1.0)
+        dl.add_line(*s, glow, 5.0)
+    for s in segs:
+        dl.add_line(*s, accent, 1.0)
+
+    # render: skeleton
+    points = {i: w2s(matrix, *struct.unpack_from("3f", data, i * 0x20)) for i in SKELETON_BONES}
+    links = [(points[i], points[j]) for i, j in SKELETON_LINKS if points[i] and points[j]]
+    bone_shade, bone_col = rgba(0, 0, 0, 0.15), rgba(*bone_rgb, 0.55)
+    for p1, p2 in links:
+        dl.add_line(*p1, *p2, bone_shade, 2.0)
+    for p1, p2 in links:
+        dl.add_line(*p1, *p2, bone_col, 1.0)
+    for i, point in points.items():
+        if point and i != 7:
+            dl.add_circle_filled(*point, 1.0, rgba(*bone_rgb, 0.7), 8)
+
+    # render: head circle
+    center, edge = w2s(matrix, hx, hy, hz + 3), w2s(matrix, hx, hy, hz + 8)
+    if center and edge:
+        radius = abs(center[1] - edge[1])
+        dl.add_circle(*center, radius, rgba(*bone_rgb, 0.10), 24, 4.0)
+        dl.add_circle(*center, radius, rgba(*bone_rgb, 0.85), 24, 1.0)
 
     # render: health bar
     x2 = l - 5
-    x1 = x2 - 3
+    x1 = x2 - 2
     fill_y = b - h * st[0]
-    dl.add_rect_filled(x1 - 1, t - 1, x2 + 1, b + 1, black)
-    dl.add_rect_filled(x1, t, x2, b, dark)
-    dl.add_rect_filled(x1, b - h * st[1], x2, b, rgba(1, 1, 1, 0.45))
-    dl.add_rect_filled(x1, fill_y, x2, b, hp_color(st[0]))
+    dl.add_rect_filled(x1 - 1, t - 1, x2 + 1, b + 1, panel, 2.0)
+    dl.add_rect_filled(x1, b - h * st[1], x2, b, rgba(1, 1, 1, 0.35), 1.0)
+    dl.add_rect_filled(x1 - 1, fill_y, x2 + 1, b, hp_color(st[0], 0.18), 2.0)
+    dl.add_rect_filled(x1, fill_y, x2, b, hp_color(st[0], 0.95), 1.0)
+    dl.add_line(x1, fill_y + .5, x2, fill_y + .5, rgba(1, 1, 1, 0.55), 1.0)
     if hp < 100:
         size = imgui.calc_text_size(str(hp))
         ty = min(max(fill_y - size.y / 2, t - 2), b - size.y + 2)
-        dl.add_text(x1 - 2 - size.x, ty + 1, rgba(0, 0, 0, 0.9), str(hp))
-        dl.add_text(x1 - 3 - size.x, ty, rgba(1, 1, 1), str(hp))
+        draw_text(dl, x1 - 3 - size.x, ty, str(hp), (1, 1, 1, 0.9))
 
-    # render: armor bar
-    if armor > 0 or st[2] > 0.01:
-        y1 = b + 4
-        dl.add_rect_filled(l - 1, y1 - 1, r + 1, y1 + 4, black)
-        dl.add_rect_filled(l, y1, r, y1 + 3, dark)
-        dl.add_rect_filled(l, y1, l + (r - l) * st[2], y1 + 3, rgba(0.35, 0.65, 1.0))
+    # render: weapon
+    weapon = weapon_name(pawn)
+    if weapon:
+        tw = imgui.calc_text_size(weapon)
+        draw_text(dl, round((l + r) / 2 - tw.x / 2), b + 5, weapon, (0.85, 0.87, 0.92, 0.85))
     return True
 
 # --- frame ---
@@ -190,68 +267,3 @@ def draw_frame(dl):
 
     for pawn in [p for p in anim if p not in seen]:
         del anim[pawn]
-
-
-# --- window ---
-def main():
-    if not glfw.init():
-        exit("Could not initialize OpenGL context")
-
-    global X, Y, W, H
-
-    glfw.window_hint(glfw.TRANSPARENT_FRAMEBUFFER, glfw.TRUE)
-    glfw.window_hint(glfw.DECORATED, glfw.FALSE)
-    window = glfw.create_window(W, H, "ESP", None, None)
-    hwnd = glfw.get_win32_window(window)
-
-    win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32con.WS_EX_TRANSPARENT | win32con.WS_EX_LAYERED)
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, X, Y, W, H, win32con.SWP_NOACTIVATE)
-
-    glfw.make_context_current(window)
-    imgui.create_context()
-    impl = GlfwRenderer(window)
-
-    flags = (imgui.WINDOW_NO_TITLE_BAR | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_SCROLLBAR
-             | imgui.WINDOW_NO_COLLAPSE | imgui.WINDOW_NO_BACKGROUND)
-
-    # loop
-    shown = True
-    while not glfw.window_should_close(window):
-        active = win32gui.GetForegroundWindow() == game_hwnd()
-        if active != shown:
-            shown = active
-            (glfw.show_window if active else glfw.hide_window)(window)
-        if not active:
-            glfw.poll_events()
-            time.sleep(0.02)
-            continue
-
-        rect = game_rect()
-        if rect != (X, Y, W, H) and rect[2] > 0 and rect[3] > 0:
-            X, Y, W, H = rect
-            glfw.set_window_pos(window, X, Y)
-            glfw.set_window_size(window, W, H)
-
-        glfw.poll_events()
-        impl.process_inputs()
-        imgui.new_frame()
-
-        imgui.set_next_window_size(W, H)
-        imgui.set_next_window_position(0, 0)
-        imgui.begin("overlay", flags=flags)
-        draw_frame(imgui.get_window_draw_list())
-        imgui.end()
-        imgui.end_frame()
-
-        gl.glClearColor(0, 0, 0, 0)
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-        imgui.render()
-        impl.render(imgui.get_draw_data())
-        glfw.swap_buffers(window)
-
-    impl.shutdown()
-    glfw.terminate()
-
-
-if __name__ == '__main__':
-    main()
