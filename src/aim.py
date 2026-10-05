@@ -11,8 +11,8 @@ from offsets import *
 from src import entity
 
 TOGGLE_KEY = 0x05
-SMOOTH = 8.0
-SENS = 1.0
+SMOOTH = 2.7
+SENS = 2.5
 RADIUS = 0.085
 HEAD_BONE = 7
 enabled = None
@@ -74,7 +74,7 @@ def aim():
     was_down = False
 
     while True:
-        time.sleep(0.005)
+        local_player = pm.read_longlong(client + dwLocalPlayerPawn)
 
         size = get_game_size()
         down = bool(win32api.GetAsyncKeyState(TOGGLE_KEY) & 0x8000)
@@ -84,6 +84,12 @@ def aim():
 
         if not enabled or not size:
             continue
+
+        try:
+            if pm.read_uchar(local_player + m_lifeState) != 0:
+                continue
+        except Exception:
+            pass
 
         try:
             matrix = struct.unpack("16f", pm.read_bytes(client + dwViewMatrix, 64))

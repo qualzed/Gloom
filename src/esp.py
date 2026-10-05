@@ -60,13 +60,6 @@ def approach(cur, target, speed, dt):
 def rgba(r, g, b, a=1.0):
     return imgui.get_color_u32_rgba(r, g, b, a)
 
-def hp_color(f, a=1.0):
-    if f < 0.5:
-        k = f * 2
-        return rgba(1.0, lerp(0.28, 0.80, k), lerp(0.32, 0.28, k), a)
-    k = (f - 0.5) * 2
-    return rgba(lerp(1.0, 0.32, k), lerp(0.80, 0.92, k), lerp(0.28, 0.55, k), a)
-
 def tint(rgb, k):
     return tuple(lerp(1.0, c, k) for c in rgb)
 
@@ -81,8 +74,28 @@ def w2s(m, x, y, z):
     return (W / 2 + W / 2 * (m[0] * x + m[1] * y + m[2] * z + m[3]) / w,
             H / 2 - H / 2 * (m[4] * x + m[5] * y + m[6] * z + m[7]) / w)
 
+# --- hp gradient (green top, red bottom) ---
+GREEN, YELLOW, RED = (0.32, 0.92, 0.55), (1.00, 0.80, 0.28), (1.00, 0.28, 0.32)
+
+def grad_rgb(f):
+    f = clamp(f)
+    if f < 0.5:
+        return tuple(lerp(a, c, f * 2) for a, c in zip(GREEN, YELLOW))
+    return tuple(lerp(a, c, (f - 0.5) * 2) for a, c in zip(YELLOW, RED))
+
+def hp_bar(dl, x1, x2, t, b, fill_y, alpha):
+    mid = (t + b) / 2
+    for y0, y1 in ((t, mid), (mid, b)):
+        top = max(y0, fill_y)
+        if top >= y1:
+            continue
+        c_top = rgba(*grad_rgb((top - t) / (b - t)), alpha)
+        c_bot = rgba(*grad_rgb((y1 - t) / (b - t)), alpha)
+        dl.add_rect_filled_multicolor(x1, top, x2, y1, c_top, c_top, c_bot, c_bot)
+
 # --- state ---
 anim = {}
+carry_cache = {}
 last_time = time.perf_counter()
 reported = set()
 
@@ -96,9 +109,21 @@ SKELETON_LINKS = (
 )
 SKELETON_BONES = {i for link in SKELETON_LINKS for i in link}
 
-# --- weapons ---
+# --- weapons / items ---
+def safe_field(cls, name):
+    try:
+        return field(cls, name)
+    except KeyError:
+        print("missing field:", cls, name)
+        return None
+
 m_pWeaponServices = field('C_BasePlayerPawn', 'm_pWeaponServices')
 m_hActiveWeapon = field('CPlayer_WeaponServices', 'm_hActiveWeapon')
+m_hMyWeapons = safe_field('CPlayer_WeaponServices', 'm_hMyWeapons')
+m_pItemServices = safe_field('C_BasePlayerPawn', 'm_pItemServices')
+m_bHasDefuser = safe_field('CCSPlayer_ItemServices', 'm_bHasDefuser')
+
+C4_ID = 49
 
 WEAPONS = {
     1: "Desert Eagle", 2: "Dual Berettas", 3: "Five-SeveN", 4: "Glock-18",
@@ -113,18 +138,27 @@ WEAPONS = {
 }
 
 
+def entity_from_handle(handle):
+    index = handle & 0x7FFF
+    entity_list = pm.read_longlong(client + dwEntityList)
+    entry = pm.read_longlong(entity_list + 0x8 * (index >> 9) + 0x10)
+    return pm.read_longlong(entry + 0x70 * (index & 0x1FF))
+
+
+def item_id(weapon):
+    try:
+        return pm.read_ushort(weapon + m_AttributeManager + m_Item + m_iItemDefinitionIndex)
+    except Exception:
+        return 0
+
+
 def weapon_name(pawn):
     try:
         services = pm.read_longlong(pawn + m_pWeaponServices)
         handle = pm.read_int(services + m_hActiveWeapon) & 0xFFFFFFFF
         if not services or handle == 0xFFFFFFFF:
             return ""
-
-        index = handle & 0x7FFF
-        entity_list = pm.read_longlong(client + dwEntityList)
-        entry = pm.read_longlong(entity_list + 0x8 * (index >> 9) + 0x10)
-        weapon = pm.read_longlong(entry + 0x70 * (index & 0x1FF))
-        item = pm.read_ushort(weapon + m_AttributeManager + m_Item + m_iItemDefinitionIndex)
+        item = item_id(entity_from_handle(handle))
     except Exception:
         return ""
 
@@ -173,7 +207,7 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     st[1] = approach(max(st[1], st[0]), st[0], 2.5, dt)
 
     # colors
-    rgb = (0.36, 0.78, 1.00) if team == local_team else (1.00, 0.36, 0.40)
+    rgb = (0.36, 0.78, 1.00) if team == local_team else (1.00, 0.30, 0.34)
     accent = rgba(*rgb, 0.95)
     glow = rgba(*rgb, 0.08)
     shade = rgba(0, 0, 0, 0.22)
@@ -223,23 +257,26 @@ def draw_player(dl, pawn, matrix, local_team, dt):
 
     # render: health bar
     x2 = l - 5
-    x1 = x2 - 2
+    x1 = x2 - 3
     fill_y = b - h * st[0]
+    trail_y = b - h * st[1]
     dl.add_rect_filled(x1 - 1, t - 1, x2 + 1, b + 1, panel, 2.0)
-    dl.add_rect_filled(x1, b - h * st[1], x2, b, rgba(1, 1, 1, 0.35), 1.0)
-    dl.add_rect_filled(x1 - 1, fill_y, x2 + 1, b, hp_color(st[0], 0.18), 2.0)
-    dl.add_rect_filled(x1, fill_y, x2, b, hp_color(st[0], 0.95), 1.0)
+    dl.add_rect_filled(x1, trail_y, x2, b, rgba(1, 1, 1, 0.30), 1.0)
+    glow_rgb = grad_rgb((fill_y - t) / max(b - t, 1))
+    dl.add_rect_filled(x1 - 1, fill_y, x2 + 1, b, rgba(*glow_rgb, 0.18), 2.0)
+    hp_bar(dl, x1, x2, t, b, fill_y, 0.95)
     dl.add_line(x1, fill_y + .5, x2, fill_y + .5, rgba(1, 1, 1, 0.55), 1.0)
-    if hp < 100:
-        size = imgui.calc_text_size(str(hp))
-        ty = min(max(fill_y - size.y / 2, t - 2), b - size.y + 2)
-        draw_text(dl, x1 - 3 - size.x, ty, str(hp), (1, 1, 1, 0.9))
+    # if hp < 100:
+    #     size = imgui.calc_text_size(str(hp))
+    #     ty = min(max(fill_y - size.y / 2, t - 2), b - size.y + 2)
+    #     draw_text(dl, x1 - 3 - size.x, ty, str(hp), (*glow_rgb, 0.95))
 
     # render: weapon
     weapon = weapon_name(pawn)
     if weapon:
         tw = imgui.calc_text_size(weapon)
-        draw_text(dl, round((l + r) / 2 - tw.x / 2), b + 5, weapon, (0.85, 0.87, 0.92, 0.85))
+        draw_text(dl, round((l + r) / 2 - tw.x / 2), b + 5, weapon, (0.85, 0.87, 0.92, 0.9))
+        
     return True
 
 # --- frame ---
@@ -267,3 +304,5 @@ def draw_frame(dl):
 
     for pawn in [p for p in anim if p not in seen]:
         del anim[pawn]
+    for pawn in [p for p in carry_cache if p not in seen]:
+        del carry_cache[pawn]

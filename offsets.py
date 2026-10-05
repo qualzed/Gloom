@@ -23,7 +23,7 @@ def cs_offset(name):
     return int(client_dll_cs.split(f"{name} = 0x")[1].split(";")[0].strip(), 16)
 
 
-dwEntityList = 40982552
+dwEntityList = _client_offsets['dwEntityList']
 dwGlobalVars = _client_offsets['dwGlobalVars']
 dwGameEntitySystem = _client_offsets['dwGameEntitySystem']
 dwLocalPlayerPawn = _client_offsets['dwLocalPlayerPawn']

@@ -2,6 +2,7 @@
 **/.vscode/
 /main.build/
 /main.dist/
+/main.onefile-build/
 /.venv/
 venv.txt
 test.py
