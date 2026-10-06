@@ -15,6 +15,7 @@ import win32gui
 from imgui.integrations.glfw import GlfwRenderer
 from src import entity
 from offsets import *
+from internal import crashlog
 
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
@@ -40,7 +41,8 @@ while True:
         pm = pymem.Pymem("cs2.exe")
         client = pymem.process.module_from_name(pm.process_handle, "client.dll").lpBaseOfDll
         break
-    except Exception:
+    except Exception as e:
+        crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
         pass
 
 time.sleep(1)
@@ -113,8 +115,8 @@ SKELETON_BONES = {i for link in SKELETON_LINKS for i in link}
 def safe_field(cls, name):
     try:
         return field(cls, name)
-    except KeyError:
-        print("missing field:", cls, name)
+    except Exception as e:
+        crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
         return None
 
 m_pWeaponServices = field('C_BasePlayerPawn', 'm_pWeaponServices')
@@ -137,20 +139,17 @@ WEAPONS = {
     63: "CZ75-Auto", 64: "R8 Revolver",
 }
 
-
 def entity_from_handle(handle):
     index = handle & 0x7FFF
     entity_list = pm.read_longlong(client + dwEntityList)
     entry = pm.read_longlong(entity_list + 0x8 * (index >> 9) + 0x10)
     return pm.read_longlong(entry + 0x70 * (index & 0x1FF))
 
-
 def item_id(weapon):
     try:
         return pm.read_ushort(weapon + m_AttributeManager + m_Item + m_iItemDefinitionIndex)
     except Exception:
         return 0
-
 
 def weapon_name(pawn):
     try:
@@ -288,7 +287,8 @@ def draw_frame(dl):
     try:
         matrix = struct.unpack("16f", pm.read_bytes(client + dwViewMatrix, 64))
         local_team = pm.read_int(pm.read_longlong(client + dwLocalPlayerPawn) + m_iTeamNum)
-    except Exception:
+    except Exception as e:
+        crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
         return
 
     seen = set()

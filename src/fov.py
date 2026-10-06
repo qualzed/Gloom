@@ -1,5 +1,6 @@
 from offsets import *
 import pymem, time
+from internal import crashlog
 
 localFOV = 90 # default fov value
 
@@ -7,7 +8,8 @@ def getCameraServices():
     try:
         _dwLocalPlayerPawn = pm.read_longlong(client + dwLocalPlayerPawn)
         cameraServices = pm.read_longlong(_dwLocalPlayerPawn + m_pCameraServices)
-    except Exception:
+    except Exception as e:
+        crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
         pass
     
     return cameraServices

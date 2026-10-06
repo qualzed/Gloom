@@ -1,5 +1,6 @@
 import struct
 from offsets import *
+from internal import crashlog
 
 CHUNKS = 64
 SLOTS = 512
@@ -26,7 +27,8 @@ def scan(wanted):
 
         try:
             data = pm.read_bytes(chunk, SLOTS * STRIDE)
-        except Exception:
+        except Exception as e:
+            crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
             continue
 
         for slot in range(SLOTS):

@@ -7,6 +7,7 @@ import win32con
 import win32gui
 from offsets import *
 from src import entity
+from internal import crashlog
 
 HOLD_KEY = 0x06
 
@@ -67,5 +68,6 @@ def trigger():
                     click()
                     last_shot = time.perf_counter()
                     break
-        except Exception:
+        except Exception as e:
+            crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
             continue

@@ -5,9 +5,9 @@ import OpenGL.GL as gl
 import win32api, win32con, win32gui
 from imgui.integrations.glfw import GlfwRenderer
 from offsets import *
-from src import aim, esp, crosshair
+from src import aim, esp, crosshair, playerState
 from src.ui import menu
-from main import _esp
+from main import _esp, _aim, _antiflash, _antismoke, _glow, _fov, _trigger
 
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
@@ -46,70 +46,60 @@ def returnBombSite():
      try:
           planted_c4 = pm.read_longlong(client + dwPlantedC4)
           site = pm.read_int(planted_c4 + m_nBombSite)
-          return "( A )" if site == 0 else "( B )" if site == 1 else ""
+          return "A" if site == 0 else "B" if site == 1 else ""
      except Exception:
           return ""
 
-def isBeingDefused():
-     try:
-          planted_c4 = pm.read_longlong(client + dwPlantedC4)
-          return pm.read_bool(planted_c4 + m_bBeingDefused)
-     except Exception:
-          return False
+# def isBeingDefused():
+#      try:
+#           planted_c4 = pm.read_longlong(client + dwPlantedC4)
+#           return pm.read_bool(planted_c4 + m_bBeingDefused)
+#      except Exception:
+#           return False
 
 def get_text_size(text):
      tw, th = imgui.calc_text_size(text)
      return tw + 10, th + 10
 
-def draw_panel(dl, x, y, w, h):
-     radius = 15.0
+def draw_functions_panel(dl, weight = None, height = None):
+     x, y = 5, 3 # left upper corner
+     step = 2
 
-     dl.add_rect_filled(
-          x, y, x + w, y + h,
-          rgba(0.04, 0.04, 0.05, 0.90),
-          radius
-     )
+     features = [
+          (_aim, "AIM"),
+          (_esp, "ESP"),
+          (_glow, "GLOW"),
+          (_trigger, "TRIGGER"),
+          (_fov, "FOV"),
+          (_antismoke, "ANTISMOKE"),
+          (_antiflash, "ANTIFLASH")
+     ]
 
-     dl.add_rect(
-          x, y, x + w, y + h,
-          rgba(1.0, 1.0, 1.0, 0.15),
-          radius,
-          thickness=1.0
-     )
+     for flag, name in features:
+          if flag:
+               dl.add_text(x, y, rgba(1.0, 1.0, 1.0, 1.0), name)
+               x += get_text_size(name)[0] + step
 
-     planted = isPlanted()
-     status = "planted" if planted else "not planted"
 
-     dl.add_text(
-          x + 10,
-          y + 5,
-          rgba(1.0, 1.0, 1.0),
-          f"Bomb status: {status} {returnBombSite()}"
-     )
+def draw_bomb_panel(dl, weight = None, height = None):
+     radius = 10.0
+     w, h = 140, 80
+     x, y = 20, (height / 2) - (h / 2)
 
-     if planted:
-          text = f"Time until explosion: {bombExplosionTime():.1f}"
-          dl.add_text(
-               x + 10,
-               y + get_text_size(text)[1],
-               rgba(1.0, 1.0, 1.0),
-               text
-          )
+     dl.add_rect_filled(x, y, x + w, y + h, rgba(0.02, 0.02, 0.03, 0.85), radius)
+     dl.add_rect(x, y, x + w, y + h, rgba(1.0, 1.0, 1.0, 0.12), radius, thickness=1.0)
 
-     if isBeingDefused():
-          dl.add_text(
-               x + 65 + get_text_size("BOMB IS BEING DEFUSED")[0],
-               y + 5,
-               rgba(1.0, 0.0, 0.0),
-               "BOMB IS BEING DEFUSED"
-          )
+     tx, ty, step = x + 12, y + 10, -1
 
-     dl.add_text(
-          x + w - get_text_size("AIM")[1] - 10,
-          y + 5,
-          rgba(0.0, 1.0, 0.0) if aim.enabled else rgba(1.0, 0.0, 0.0),
-          "AIM"
-     )
+     dl.add_text(tx, ty, rgba(1.0, 1.0, 1.0, 1.0), "C4 PLANTED")
+     ty += get_text_size("C4 PLANTED")[1] + step
+
+     site_str = f"Site: {returnBombSite()}"
+     dl.add_text(tx, ty, rgba(0.65, 0.65, 0.70, 1.0), site_str)
+     ty += get_text_size(site_str)[1] + step
+
+     timer_str = f"Explosion: {bombExplosionTime():.1f}s"
+     dl.add_text(tx, ty, rgba(1.0, 0.35, 0.35, 1.0), timer_str)
 
 def main():
      global X, Y, W, H
@@ -188,30 +178,21 @@ def main():
           imgui.set_next_window_position(0, 0)
           imgui.begin("overlay", flags=flags)
 
-          panel_w, panel_h = 700, 40
-          panel_x = (W - panel_w) / 2
-          panel_y = H - panel_h - 100
+          draw_functions_panel(imgui.get_window_draw_list(), W, H)
+          if isPlanted():
+               draw_bomb_panel(imgui.get_window_draw_list(), W, H)
 
-          draw_panel(
-               imgui.get_window_draw_list(),
-               panel_x,
-               panel_y,
-               panel_w,
-               panel_h
-          )
+          if win32api.GetAsyncKeyState(win32con.VK_INSERT) & 1:
+               menu_open = not menu_open
+          if menu_open:
+               script_menu.draw(imgui.get_window_draw_list(), W, H)
 
-          # if win32api.GetAsyncKeyState(win32con.VK_INSERT) & 1:
-          #      menu_open = not menu_open
-          # if menu_open:
-          #      script_menu.draw(imgui.get_window_draw_list(), W, H)
-
-          crosshair.drawCrosshair(imgui.get_window_draw_list())
-
-          if aim.enabled:
-               crosshair.drawFOV(imgui.get_window_draw_list(), H * aim.RADIUS)
-
-          if _esp:
-               esp.draw_frame(imgui.get_window_draw_list())
+          if playerState.IsInGame():
+               crosshair.drawCrosshair(imgui.get_window_draw_list())
+               if aim.enabled:
+                    crosshair.drawFOV(imgui.get_window_draw_list(), H * aim.RADIUS)
+               if _esp:
+                    esp.draw_frame(imgui.get_window_draw_list())
 
           imgui.end()
           imgui.end_frame()

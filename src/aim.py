@@ -9,11 +9,12 @@ import win32con
 import win32gui
 from offsets import *
 from src import entity
+from internal import crashlog
 
 TOGGLE_KEY = 0x05
 SMOOTH = 2.7
 SENS = 2.5
-RADIUS = 0.085
+RADIUS = 0.15 # no more 0.5
 HEAD_BONE = 7
 enabled = None
 
@@ -88,7 +89,8 @@ def aim():
         try:
             if pm.read_uchar(local_player + m_lifeState) != 0:
                 continue
-        except Exception:
+        except Exception as e:
+            crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
             pass
 
         try:
@@ -97,5 +99,5 @@ def aim():
             if target:
                 move_mouse(*target, size[1])
         except Exception as e:
-            # print(f"{Fore.RED}{e}")
+            crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
             continue
