@@ -17,7 +17,7 @@ def read_name(controller):
 def init_entity_list():
     entities = []
 
-    local_pawn = pm.read_longlong(client + offsets['client.dll']['dwLocalPlayerPawn'])
+    local_pawn = pm.read_longlong(client + dwLocalPlayerPawn)
     if not local_pawn:
         return
 

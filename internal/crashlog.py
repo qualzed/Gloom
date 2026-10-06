@@ -8,7 +8,7 @@ def catchError(error, errorPath = None, errorStr = None):
      try:
           crashFile = open(f"{LOG_PATH}{file_name}", "w+")
           crashFile.write(
-               f"Error catched in: {errorPath}\nError on line: {errorStr}\n\n{str(error)}"
+               f"Error catched in: {errorPath}\nError on line: {errorStr}\n{str(error)}"
           )
           crashFile.close()
      except Exception as e:

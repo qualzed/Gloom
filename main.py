@@ -72,7 +72,7 @@ if __name__ == "__main__":
         createHook("trigger", trigger.trigger)
 
     if _antismoke:
-            createHook("antismoke", antismoke.nosmoke)
+        createHook("antismoke", antismoke.nosmoke)
 
     createHook("panel", panel.main)
 

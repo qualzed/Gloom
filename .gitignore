@@ -4,6 +4,7 @@
 /main.dist/
 /main.onefile-build/
 /.venv/
+/history/
 venv.txt
 test.py
 buffer.txt

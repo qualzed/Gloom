@@ -33,6 +33,7 @@ dwViewAngles = _client_offsets['dwViewAngles']
 dwPlantedC4 = _client_offsets['dwPlantedC4']
 dwWeaponC4 = _client_offsets['dwWeaponC4']
 dwGameRules = _client_offsets['dwGameRules']
+dwCSGOInput = _client_offsets['dwCSGOInput']
 
 m_iTeamNum = field('C_BaseEntity', 'm_iTeamNum')
 m_lifeState = field('C_BaseEntity', 'm_lifeState')

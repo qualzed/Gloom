@@ -206,7 +206,7 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     st[1] = approach(max(st[1], st[0]), st[0], 2.5, dt)
 
     # colors
-    rgb = (0.36, 0.78, 1.00) if team == local_team else (1.00, 0.30, 0.34)
+    rgb = (0.36, 0.78, 1.00)
     accent = rgba(*rgb, 0.95)
     glow = rgba(*rgb, 0.08)
     shade = rgba(0, 0, 0, 0.22)
