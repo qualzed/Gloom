@@ -1,0 +1,9 @@
+{
+     "esp": true,
+     "aim": true,
+     "glow": false,
+     "antiflash": true,
+     "antismoke": true,
+     "fov": false,
+     "trigger": false
+}

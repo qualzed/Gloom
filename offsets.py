@@ -47,7 +47,11 @@ m_iszPlayerName = field('CBasePlayerController', 'm_iszPlayerName')
 m_iDesiredFOV = field('CBasePlayerController', 'm_iDesiredFOV')
 m_sSanitizedPlayerName = field('CCSPlayerController', 'm_sSanitizedPlayerName')
 
+m_flDetonateTime = field('C_BaseGrenade', 'm_flDetonateTime')
+m_flCurrentTime = field('C_SceneEntity', 'm_flCurrentTime')
+
 m_ArmorValue = field('C_CSPlayerPawn', 'm_ArmorValue')
+m_bIsScoped = field('C_CSPlayerPawn', 'm_bIsScoped')
 m_flFlashMaxAlpha = field('C_CSPlayerPawnBase', 'm_flFlashMaxAlpha')
 m_pCameraServices = field('C_BasePlayerPawn', 'm_pCameraServices')
 m_iFOV = field('CCSPlayerBase_CameraServices', 'm_iFOV')

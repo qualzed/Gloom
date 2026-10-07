@@ -3,14 +3,7 @@ import threading
 import inspect
 from src import fov, antiflash, glow, entity, trigger, aim, scanner, antismoke
 from src.ui import panel
-
-_esp: bool = True
-_fov: bool = False
-_antiflash: bool = True
-_glow: bool = False
-_trigger: bool = False
-_aim: bool = True
-_antismoke: bool = True
+from internal import serializer
 
 hooks = {}
 
@@ -56,22 +49,24 @@ def glowLoop(stop_event: threading.Event):
         time.sleep(0.001)
 
 if __name__ == "__main__":
-    if _fov:
-        createHook("fov", fov.setFOV, (90,))
+    serializer.ReadJSON()
 
-    if _antiflash:
+    if serializer._fov:
+        createHook("fov", fov.setFOV, (120,))
+
+    if serializer._antiflash:
         createHook("antiflash", antiflash.antiflash)
 
-    if _glow:
+    if serializer._glow:
         createHook("glow", glowLoop)
 
-    if _aim:
+    if serializer._aim:
         createHook("aim", aim.aim)
 
-    if _trigger:
+    if serializer._trigger:
         createHook("trigger", trigger.trigger)
 
-    if _antismoke:
+    if serializer._antismoke:
         createHook("antismoke", antismoke.nosmoke)
 
     createHook("panel", panel.main)

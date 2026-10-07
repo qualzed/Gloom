@@ -4,7 +4,7 @@ from internal import crashlog
 
 localFOV = 90 # default fov value
 
-def getCameraServices():
+def getCameraAndPawn():
     try:
         _dwLocalPlayerPawn = pm.read_longlong(client + dwLocalPlayerPawn)
         cameraServices = pm.read_longlong(_dwLocalPlayerPawn + m_pCameraServices)
@@ -12,13 +12,15 @@ def getCameraServices():
         crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
         pass
     
-    return cameraServices
+    return cameraServices, _dwLocalPlayerPawn
 
 def returnFOV():
-    fov = pm.read_uint(getCameraServices() + m_iFOV)
+    fov = pm.read_uint(getCameraAndPawn()[0] + m_iFOV)
     return fov
 
 def setFOV(fov: int, retry: bool = False):
     while 1:
-        pm.write_uint(getCameraServices() + m_iFOV, fov)
-        time.sleep(0.05)
+        if pm.read_bool(getCameraAndPawn()[1] + m_bIsScoped):
+            continue
+
+        pm.write_uint(getCameraAndPawn()[0] + m_iFOV, fov)

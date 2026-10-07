@@ -4,13 +4,10 @@ import os
 import struct
 import time
 import traceback
-import glfw
 import imgui
 import OpenGL.GL as gl
 import pymem
 import pymem.process
-import requests
-import win32con
 import win32gui
 from imgui.integrations.glfw import GlfwRenderer
 from src import entity
@@ -19,6 +16,10 @@ from internal import crashlog
 
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
+
+ICON_FONT_PATH = os.path.join("assets/csgo_icons.ttf")
+ICON_FONT_SIZE = 10
+icon_font = None
 
 def game_hwnd():
     return win32gui.FindWindow(None, "Counter-Strike 2")
@@ -34,9 +35,7 @@ def game_rect():
 X, Y, W, H = game_rect()
 
 # --- attach ---
-print("Waiting for cs2.exe")
 while True:
-    time.sleep(1)
     try:
         pm = pymem.Pymem("cs2.exe")
         client = pymem.process.module_from_name(pm.process_handle, "client.dll").lpBaseOfDll
@@ -44,10 +43,6 @@ while True:
     except Exception as e:
         crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
         pass
-
-time.sleep(1)
-os.system("cls")
-print("ESP loaded")
 
 # --- helpers ---
 def clamp(v):
@@ -138,6 +133,35 @@ WEAPONS = {
     48: "Incendiary", 49: "C4", 59: "Knife", 60: "M4A1-S", 61: "USP-S",
     63: "CZ75-Auto", 64: "R8 Revolver",
 }
+
+def init_icon_font():
+    global icon_font
+    io = imgui.get_io()
+    ranges = imgui.GlyphRanges([0x0020, 0x00FF, 0xE000, 0xF8FF, 0])
+    if os.path.isfile(ICON_FONT_PATH):
+        icon_font = io.fonts.add_font_from_file_ttf(
+            ICON_FONT_PATH, ICON_FONT_SIZE, glyph_ranges=ranges)
+        print(f"[+] Icon font loaded: {ICON_FONT_PATH}")
+    else:
+        print(f"[!] Not found: {ICON_FONT_PATH}")
+
+def active_weapon_item(pawn):
+    try:
+        services = pm.read_longlong(pawn + m_pWeaponServices)
+        if not services:
+            return False
+        handle = pm.read_int(services + m_hActiveWeapon) & 0xFFFFFFFF
+        if handle == 0xFFFFFFFF:
+            return False
+        return item_id(entity_from_handle(handle))
+    except Exception:
+        crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
+        return False
+
+def weapon_icon_glyph(item_id):
+    if item_id <= 0 or item_id > 250:
+        return None
+    return chr(0xE000 + item_id)
 
 def entity_from_handle(handle):
     index = handle & 0x7FFF
@@ -271,11 +295,27 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     #     draw_text(dl, x1 - 3 - size.x, ty, str(hp), (*glow_rgb, 0.95))
 
     # render: weapon
-    weapon = weapon_name(pawn)
-    if weapon:
-        tw = imgui.calc_text_size(weapon)
-        draw_text(dl, round((l + r) / 2 - tw.x / 2), b + 5, weapon, (0.85, 0.87, 0.92, 0.9))
-        
+
+    item = active_weapon_item(pawn)
+    glyph = weapon_icon_glyph(item) if item else None
+
+    if glyph and icon_font is not None:
+        imgui.push_font(icon_font)
+        try:
+            tw, th = imgui.calc_text_size(glyph)
+            ix = round((l + r) / 2 - tw / 2)
+            iy = round(b + 4)
+
+            dl.add_text(ix + 1, iy + 1, rgba(0, 0, 0, 0.6), glyph)
+            dl.add_text(ix,     iy,     rgba(0.90, 0.93, 0.97, 0.95), glyph)
+        finally:
+            imgui.pop_font()
+    else:
+        weapon = weapon_name(pawn)
+        if weapon:
+            tw = imgui.calc_text_size(weapon)
+            draw_text(dl, round((l + r) / 2 - tw.x / 2),
+                    b + 5, weapon, (0.85, 0.87, 0.92, 0.9))
     return True
 
 # --- frame ---

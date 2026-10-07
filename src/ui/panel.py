@@ -7,7 +7,7 @@ from imgui.integrations.glfw import GlfwRenderer
 from offsets import *
 from src import aim, esp, crosshair, playerState
 from src.ui import menu
-from main import _esp, _aim, _antiflash, _antismoke, _glow, _fov, _trigger
+from internal import serializer
 
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
@@ -66,13 +66,13 @@ def draw_functions_panel(dl, weight = None, height = None):
      step = 2
 
      features = [
-          (_aim, "AIM"),
-          (_esp, "ESP"),
-          (_glow, "GLOW"),
-          (_trigger, "TRIGGER"),
-          (_fov, "FOV"),
-          (_antismoke, "ANTISMOKE"),
-          (_antiflash, "ANTIFLASH")
+          (serializer._aim, "AIM"),
+          (serializer._esp, "ESP"),
+          (serializer._glow, "GLOW"),
+          (serializer._trigger, "TRIGGER"),
+          (serializer._fov, "FOV"),
+          (serializer._antismoke, "ANTISMOKE"),
+          (serializer._antiflash, "ANTIFLASH")
      ]
 
      for flag, name in features:
@@ -135,6 +135,13 @@ def main():
      glfw.make_context_current(window)
 
      imgui.create_context()
+     io = imgui.get_io()
+     
+     default_font = io.fonts.add_font_default()
+
+     esp.init_icon_font()
+     esp.default_font = default_font
+     
      impl = GlfwRenderer(window)
 
      flags = (
@@ -192,7 +199,7 @@ def main():
                if aim.enabled:
                     crosshair.drawFOV(imgui.get_window_draw_list(), H * aim.RADIUS)
                     
-          if _esp:
+          if serializer._esp:
                esp.draw_frame(imgui.get_window_draw_list())
 
           imgui.end()
