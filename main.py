@@ -1,6 +1,4 @@
-import time
-import threading
-import inspect
+import time, threading, inspect, win32api, win32con
 from src import fov, antiflash, glow, entity, trigger, aim, scanner, antismoke
 from src.ui import panel
 from internal import serializer
@@ -48,6 +46,13 @@ def glowLoop(stop_event: threading.Event):
             glow.glow_entity(entity_pawn_addr=pawn)
         time.sleep(0.001)
 
+def loopTermination(stop_event: threading.Event):
+    while not stop_event.is_set():
+        if win32api.GetAsyncKeyState(win32con.VK_END) & 1:
+            stopAll()
+            break
+        time.sleep(0.01)
+
 if __name__ == "__main__":
     serializer.ReadJSON()
 
@@ -70,6 +75,7 @@ if __name__ == "__main__":
         createHook("antismoke", antismoke.nosmoke)
 
     createHook("panel", panel.main)
+    createHook("termination", loopTermination)
 
     try:
         while any(data["thread"].is_alive() for data in hooks.values()):

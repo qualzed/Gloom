@@ -190,9 +190,12 @@ def main():
                draw_bomb_panel(imgui.get_window_draw_list(), W, H)
 
           # if win32api.GetAsyncKeyState(win32con.VK_INSERT) & 1:
-          #      menu_open = not menu_open
-          # if menu_open:
-          #      script_menu.draw(imgui.get_window_draw_list(), W, H)
+          #      serializer.ReadJSON()
+
+          if win32api.GetAsyncKeyState(win32con.VK_INSERT) & 1:
+               menu_open = not menu_open
+          if menu_open:
+               script_menu.draw(imgui.get_window_draw_list(), W, H)
 
           if playerState.IsInGame():
                crosshair.drawCrosshair(imgui.get_window_draw_list())

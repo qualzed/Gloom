@@ -12,9 +12,9 @@ from src import entity
 from internal import crashlog
 
 TOGGLE_KEY = 0x05
-SMOOTH = 2.7
-SENS = 2.5
-RADIUS = 0.15 # no more 0.5
+SMOOTH = 6.0
+SENS = 1.0
+RADIUS = 0.15 # No more 0.5
 HEAD_BONE = 7
 enabled = None
 
@@ -84,6 +84,7 @@ def aim():
         was_down = down
 
         if not enabled or not size:
+            time.sleep(0.001)
             continue
 
         try:
@@ -101,3 +102,5 @@ def aim():
         except Exception as e:
             crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
             continue
+
+        time.sleep(0.004)

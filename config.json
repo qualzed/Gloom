@@ -5,5 +5,11 @@
      "antiflash": true,
      "antismoke": true,
      "fov": false,
-     "trigger": false
+     "trigger": false,
+
+     "esp_hp": true,
+     "esp_weapon": true,
+     "esp_name": true,
+     "esp_bones": true,
+     "esp_box": true
 }

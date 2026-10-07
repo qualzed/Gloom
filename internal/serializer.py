@@ -9,6 +9,11 @@ _glow: bool = False
 _trigger: bool = False
 _aim: bool = False
 _antismoke: bool = False
+_esp_hp: bool = False
+_esp_weapon: bool = False
+_esp_name: bool = False
+_esp_bones: bool = False
+_esp_box: bool = False
 
 def UpdateJSON(row: str, data):
      global _esp, _aim, _glow, _antiflash, _antismoke, _fov, _trigger
@@ -28,7 +33,7 @@ def UpdateJSON(row: str, data):
           json.dump(config, file, indent=5, ensure_ascii=False)
 
 def ReadJSON():
-     global _esp, _aim, _glow, _antiflash, _antismoke, _fov, _trigger
+     global _esp, _aim, _glow, _antiflash, _antismoke, _fov, _trigger, _esp_hp, _esp_weapon, _esp_name, _esp_bones, _esp_box
      config = None
      try:
           with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -41,5 +46,11 @@ def ReadJSON():
           _antismoke = config['antismoke']
           _fov = config['fov']
           _trigger = config['trigger']
+
+          _esp_hp = config['esp_hp']
+          _esp_weapon = config['esp_weapon']
+          _esp_name = config['esp_name']
+          _esp_bones = config['esp_bones']
+          _esp_box = config['esp_box']
      except:
           print("JSON was not found!")

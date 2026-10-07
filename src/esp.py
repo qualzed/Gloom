@@ -12,7 +12,7 @@ import win32gui
 from imgui.integrations.glfw import GlfwRenderer
 from src import entity
 from offsets import *
-from internal import crashlog
+from internal import crashlog, serializer
 
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
@@ -141,7 +141,6 @@ def init_icon_font():
     if os.path.isfile(ICON_FONT_PATH):
         icon_font = io.fonts.add_font_from_file_ttf(
             ICON_FONT_PATH, ICON_FONT_SIZE, glyph_ranges=ranges)
-        print(f"[+] Icon font loaded: {ICON_FONT_PATH}")
     else:
         print(f"[!] Not found: {ICON_FONT_PATH}")
 
@@ -238,45 +237,49 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     bone_rgb = tint(rgb, 0.45)
 
     # render: name
-    name = entity.names.get(pawn, "")
-    if name:
-        tw = imgui.calc_text_size(name)
-        draw_text(dl, round((l + r) / 2 - tw.x / 2), round(t - tw.y - 5), name, (1, 1, 1, 0.95))
+    if serializer._esp_name:
+        name = entity.names.get(pawn, "")
+        if name:
+            tw = imgui.calc_text_size(name)
+            draw_text(dl, round((l + r) / 2 - tw.x / 2), round(t - tw.y - 5), name, (1, 1, 1, 0.95))
 
     # render: box
-    for i in range(8):
-        y0, y1 = round(t + (b - t) * i / 8), round(t + (b - t) * (i + 1) / 8)
-        dl.add_rect_filled(l, y0, r, y1, rgba(*rgb, 0.015 + 0.012 * i))
 
-    cw, ch = max(4, (r - l) * 0.28), max(4, h * 0.16)
-    segs = []
-    for x, y, sx, sy in ((l, t, 1, 1), (r, t, -1, 1), (l, b, 1, -1), (r, b, -1, -1)):
-        segs += [(x + .5, y + .5, x + .5 + sx * cw, y + .5), (x + .5, y + .5, x + .5, y + .5 + sy * ch)]
-    for s in segs:
-        dl.add_line(*s, shade, 3.0)
-    for s in segs:
-        dl.add_line(*s, glow, 5.0)
-    for s in segs:
-        dl.add_line(*s, accent, 1.0)
+    if serializer._esp_box:
+        for i in range(8):
+            y0, y1 = round(t + (b - t) * i / 8), round(t + (b - t) * (i + 1) / 8)
+            dl.add_rect_filled(l, y0, r, y1, rgba(*rgb, 0.015 + 0.012 * i))
+
+        cw, ch = max(4, (r - l) * 0.28), max(4, h * 0.16)
+        segs = []
+        for x, y, sx, sy in ((l, t, 1, 1), (r, t, -1, 1), (l, b, 1, -1), (r, b, -1, -1)):
+            segs += [(x + .5, y + .5, x + .5 + sx * cw, y + .5), (x + .5, y + .5, x + .5, y + .5 + sy * ch)]
+        for s in segs:
+            dl.add_line(*s, shade, 3.0)
+        for s in segs:
+            dl.add_line(*s, glow, 5.0)
+        for s in segs:
+            dl.add_line(*s, accent, 1.0)
 
     # render: skeleton
-    points = {i: w2s(matrix, *struct.unpack_from("3f", data, i * 0x20)) for i in SKELETON_BONES}
-    links = [(points[i], points[j]) for i, j in SKELETON_LINKS if points[i] and points[j]]
-    bone_shade, bone_col = rgba(0, 0, 0, 0.15), rgba(*bone_rgb, 0.55)
-    for p1, p2 in links:
-        dl.add_line(*p1, *p2, bone_shade, 2.0)
-    for p1, p2 in links:
-        dl.add_line(*p1, *p2, bone_col, 1.0)
-    for i, point in points.items():
-        if point and i != 7:
-            dl.add_circle_filled(*point, 1.0, rgba(*bone_rgb, 0.7), 8)
+    if serializer._esp_bones:
+        points = {i: w2s(matrix, *struct.unpack_from("3f", data, i * 0x20)) for i in SKELETON_BONES}
+        links = [(points[i], points[j]) for i, j in SKELETON_LINKS if points[i] and points[j]]
+        bone_shade, bone_col = rgba(0, 0, 0, 0.15), rgba(*bone_rgb, 0.55)
+        for p1, p2 in links:
+            dl.add_line(*p1, *p2, bone_shade, 2.0)
+        for p1, p2 in links:
+            dl.add_line(*p1, *p2, bone_col, 1.0)
+        for i, point in points.items():
+            if point and i != 7:
+                dl.add_circle_filled(*point, 1.0, rgba(*bone_rgb, 0.7), 8)
 
-    # render: head circle
-    center, edge = w2s(matrix, hx, hy, hz + 3), w2s(matrix, hx, hy, hz + 8)
-    if center and edge:
-        radius = abs(center[1] - edge[1])
-        dl.add_circle(*center, radius, rgba(*bone_rgb, 0.10), 24, 4.0)
-        dl.add_circle(*center, radius, rgba(*bone_rgb, 0.85), 24, 1.0)
+        # render: head circle
+        center, edge = w2s(matrix, hx, hy, hz + 3), w2s(matrix, hx, hy, hz + 8)
+        if center and edge:
+            radius = abs(center[1] - edge[1])
+            dl.add_circle(*center, radius, rgba(*bone_rgb, 0.10), 24, 4.0)
+            dl.add_circle(*center, radius, rgba(*bone_rgb, 0.85), 24, 1.0)
 
     # render: health bar
     x2 = l - 5
@@ -289,33 +292,34 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     dl.add_rect_filled(x1 - 1, fill_y, x2 + 1, b, rgba(*glow_rgb, 0.18), 2.0)
     hp_bar(dl, x1, x2, t, b, fill_y, 0.95)
     dl.add_line(x1, fill_y + .5, x2, fill_y + .5, rgba(1, 1, 1, 0.55), 1.0)
-    # if hp < 100:
-    #     size = imgui.calc_text_size(str(hp))
-    #     ty = min(max(fill_y - size.y / 2, t - 2), b - size.y + 2)
-    #     draw_text(dl, x1 - 3 - size.x, ty, str(hp), (*glow_rgb, 0.95))
+    if hp <= 100 and serializer._esp_hp:
+        size = imgui.calc_text_size(str(hp))
+        ty = min(max(fill_y - size.y / 2, t - 2), b - size.y + 2)
+        draw_text(dl, x1 - 3 - size.x, ty, str(hp), (*glow_rgb, 0.95))
 
     # render: weapon
 
     item = active_weapon_item(pawn)
     glyph = weapon_icon_glyph(item) if item else None
 
-    if glyph and icon_font is not None:
-        imgui.push_font(icon_font)
-        try:
-            tw, th = imgui.calc_text_size(glyph)
-            ix = round((l + r) / 2 - tw / 2)
-            iy = round(b + 4)
+    if serializer._esp_weapon:
+        if glyph and icon_font is not None:
+            imgui.push_font(icon_font)
+            try:
+                tw, th = imgui.calc_text_size(glyph)
+                ix = round((l + r) / 2 - tw / 2)
+                iy = round(b + 4)
 
-            dl.add_text(ix + 1, iy + 1, rgba(0, 0, 0, 0.6), glyph)
-            dl.add_text(ix,     iy,     rgba(0.90, 0.93, 0.97, 0.95), glyph)
-        finally:
-            imgui.pop_font()
-    else:
-        weapon = weapon_name(pawn)
-        if weapon:
-            tw = imgui.calc_text_size(weapon)
-            draw_text(dl, round((l + r) / 2 - tw.x / 2),
-                    b + 5, weapon, (0.85, 0.87, 0.92, 0.9))
+                dl.add_text(ix + 1, iy + 1, rgba(0, 0, 0, 0.6), glyph)
+                dl.add_text(ix,     iy,     rgba(0.90, 0.93, 0.97, 0.95), glyph)
+            finally:
+                imgui.pop_font()
+        else:
+            weapon = weapon_name(pawn)
+            if weapon:
+                tw = imgui.calc_text_size(weapon)
+                draw_text(dl, round((l + r) / 2 - tw.x / 2),
+                        b + 5, weapon, (0.85, 0.87, 0.92, 0.9))
     return True
 
 # --- frame ---
