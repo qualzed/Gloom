@@ -17,8 +17,11 @@ from internal import crashlog, serializer
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
 
+TEXT_FONT_PATH = os.path.join("assets/font.ttf")
+TEXT_FONT_SIZE = 12
 ICON_FONT_PATH = os.path.join("assets/csgo_icons.ttf")
 ICON_FONT_SIZE = 10
+text_font = None
 icon_font = None
 
 def game_hwnd():
@@ -135,12 +138,12 @@ WEAPONS = {
 }
 
 def init_icon_font():
-    global icon_font
+    global icon_font, text_font
     io = imgui.get_io()
     ranges = imgui.GlyphRanges([0x0020, 0x00FF, 0xE000, 0xF8FF, 0])
     if os.path.isfile(ICON_FONT_PATH):
-        icon_font = io.fonts.add_font_from_file_ttf(
-            ICON_FONT_PATH, ICON_FONT_SIZE, glyph_ranges=ranges)
+        icon_font = io.fonts.add_font_from_file_ttf(ICON_FONT_PATH, ICON_FONT_SIZE, glyph_ranges=ranges)
+        text_font = io.fonts.add_font_from_file_ttf(TEXT_FONT_PATH, TEXT_FONT_SIZE, glyph_ranges=ranges)
     else:
         print(f"[!] Not found: {ICON_FONT_PATH}")
 
@@ -229,7 +232,7 @@ def draw_player(dl, pawn, matrix, local_team, dt):
     st[1] = approach(max(st[1], st[0]), st[0], 2.5, dt)
 
     # colors
-    rgb = (0.36, 0.78, 1.00)
+    rgb = (serializer._esp_color)
     accent = rgba(*rgb, 0.95)
     glow = rgba(*rgb, 0.08)
     shade = rgba(0, 0, 0, 0.22)
@@ -238,26 +241,27 @@ def draw_player(dl, pawn, matrix, local_team, dt):
 
     # render: name
     if serializer._esp_name:
+        imgui.push_font(text_font)
         name = entity.names.get(pawn, "")
         if name:
             tw = imgui.calc_text_size(name)
             draw_text(dl, round((l + r) / 2 - tw.x / 2), round(t - tw.y - 5), name, (1, 1, 1, 0.95))
-
+        imgui.pop_font()
     # render: box
 
     if serializer._esp_box:
         for i in range(8):
             y0, y1 = round(t + (b - t) * i / 8), round(t + (b - t) * (i + 1) / 8)
-            dl.add_rect_filled(l, y0, r, y1, rgba(*rgb, 0.015 + 0.012 * i))
+            dl.add_rect_filled(l, y0, r, y1, rgba(*rgb, 0.032))
 
         cw, ch = max(4, (r - l) * 0.28), max(4, h * 0.16)
         segs = []
         for x, y, sx, sy in ((l, t, 1, 1), (r, t, -1, 1), (l, b, 1, -1), (r, b, -1, -1)):
             segs += [(x + .5, y + .5, x + .5 + sx * cw, y + .5), (x + .5, y + .5, x + .5, y + .5 + sy * ch)]
-        for s in segs:
-            dl.add_line(*s, shade, 3.0)
-        for s in segs:
-            dl.add_line(*s, glow, 5.0)
+        # for s in segs:
+        #     dl.add_line(*s, shade, 3.0)
+        # for s in segs:
+        #     dl.add_line(*s, glow, 5.0)
         for s in segs:
             dl.add_line(*s, accent, 1.0)
 
@@ -299,10 +303,9 @@ def draw_player(dl, pawn, matrix, local_team, dt):
 
     # render: weapon
 
-    item = active_weapon_item(pawn)
-    glyph = weapon_icon_glyph(item) if item else None
-
     if serializer._esp_weapon:
+        item = active_weapon_item(pawn)
+        glyph = weapon_icon_glyph(item) if item else None
         if glyph and icon_font is not None:
             imgui.push_font(icon_font)
             try:

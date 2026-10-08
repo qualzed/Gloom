@@ -14,14 +14,11 @@ client_dll_cs = requests.get(BASE_URL + 'client_dll.cs').text
 _client_offsets = offsets['client.dll']
 _classes = client_dll['client.dll']['classes']
 
-
 def field(cls, name):
     return _classes[cls]['fields'][name]
 
-
 def cs_offset(name):
     return int(client_dll_cs.split(f"{name} = 0x")[1].split(";")[0].strip(), 16)
-
 
 dwEntityList = _client_offsets['dwEntityList']
 dwGlobalVars = _client_offsets['dwGlobalVars']

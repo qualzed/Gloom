@@ -1,5 +1,5 @@
 import time, threading, inspect, win32api, win32con
-from src import fov, antiflash, glow, entity, trigger, aim, scanner, antismoke
+from src import fov, antiflash, glow, entity, trigger, aim, scanner, antismoke, bhop
 from src.ui import panel
 from internal import serializer
 
@@ -73,6 +73,9 @@ if __name__ == "__main__":
 
     if serializer._antismoke:
         createHook("antismoke", antismoke.nosmoke)
+
+    if serializer._bhop:
+            createHook("antismoke", bhop.bhop)
 
     createHook("panel", panel.main)
     createHook("termination", loopTermination)

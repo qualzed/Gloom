@@ -14,7 +14,7 @@ from internal import crashlog
 TOGGLE_KEY = 0x05
 SMOOTH = 6.0
 SENS = 1.0
-RADIUS = 0.15 # No more 0.5
+RADIUS = 0.08 # No more 0.5
 HEAD_BONE = 7
 enabled = None
 
@@ -103,4 +103,4 @@ def aim():
             crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
             continue
 
-        time.sleep(0.004)
+        time.sleep(0.0055)

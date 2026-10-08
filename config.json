@@ -6,10 +6,12 @@
      "antismoke": true,
      "fov": false,
      "trigger": false,
+     "bhop": true,
 
      "esp_hp": true,
      "esp_weapon": true,
      "esp_name": true,
      "esp_bones": true,
-     "esp_box": true
+     "esp_box": true,
+     "esp_color": "0.2, 0.6, 0.3"
 }
