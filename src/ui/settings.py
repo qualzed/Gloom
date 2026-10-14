@@ -3,7 +3,6 @@ import mmap
 
 MAGIC = 0x4D575231
 
-
 class Config(ctypes.Structure):
     _fields_ = [
         ("magic", ctypes.c_uint32),
@@ -24,7 +23,6 @@ class Config(ctypes.Structure):
         ("glow_b", ctypes.c_float),
     ]
 
-
 DEFAULTS = {
     "esp_hp": True,
     "esp_name": True,
@@ -44,7 +42,7 @@ DEFAULTS = {
 }
 
 try:
-    _map = mmap.mmap(-1, ctypes.sizeof(Config), tagname="moonware_config")
+    _map = mmap.mmap(-1, ctypes.sizeof(Config), tagname="config")
 except TypeError:
     _map = mmap.mmap(-1, ctypes.sizeof(Config))
 

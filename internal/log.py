@@ -1,0 +1,1 @@
+# global log that logging console

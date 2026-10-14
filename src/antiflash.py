@@ -4,6 +4,7 @@ import pymem, time
 from internal import crashlog
 
 def antiflash():
+     print("[+] Anti-flash has been loaded.")
      while 1:
           if not playerState.IsInGame():
                continue

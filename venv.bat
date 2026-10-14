@@ -1,0 +1,1 @@
+E:/Gloom/Gloom_Soft/.venv/Scripts/activate

@@ -27,7 +27,7 @@ def jump_offset():
 
 def bhop():
     jump = client + jump_offset()
-
+    print("[+] Bunnyhop has been loaded.")
     while True:
         time.sleep(0.001)
 

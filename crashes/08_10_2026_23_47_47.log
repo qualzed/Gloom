@@ -1,0 +1,3 @@
+Error catched in: src.antiflash
+Error on line: 14
+Could not write memory at: 3160894110988, length: 0.0 - GetLastError: 998

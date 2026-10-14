@@ -1,7 +1,7 @@
-import time, threading, inspect, win32api, win32con
+import time, threading, inspect, win32api, win32con, os
 from src import fov, antiflash, glow, entity, trigger, aim, scanner, antismoke, bhop
 from src.ui import panel
-from internal import serializer
+from internal import serializer, rpc
 
 hooks = {}
 
@@ -36,15 +36,14 @@ def stopHook(hookName: str):
         if thread.is_alive():
             thread.join(timeout=0.2)
 
+def hookExist(hookName):
+    if hookName in hooks:
+        return True
+    return False
+
 def stopAll():
     for hookName in list(hooks):
         stopHook(hookName)
-
-def glowLoop(stop_event: threading.Event):
-    while not stop_event.is_set():
-        for pawn in entity.init_entity_list():
-            glow.glow_entity(entity_pawn_addr=pawn)
-        time.sleep(0.001)
 
 def loopTermination(stop_event: threading.Event):
     while not stop_event.is_set():
@@ -53,17 +52,12 @@ def loopTermination(stop_event: threading.Event):
             break
         time.sleep(0.01)
 
-if __name__ == "__main__":
-    serializer.ReadJSON()
-
+def loadHooks():
     if serializer._fov:
         createHook("fov", fov.setFOV, (120,))
 
     if serializer._antiflash:
         createHook("antiflash", antiflash.antiflash)
-
-    if serializer._glow:
-        createHook("glow", glowLoop)
 
     if serializer._aim:
         createHook("aim", aim.aim)
@@ -75,9 +69,19 @@ if __name__ == "__main__":
         createHook("antismoke", antismoke.nosmoke)
 
     if serializer._bhop:
-            createHook("antismoke", bhop.bhop)
+        createHook("antismoke", bhop.bhop)
+
+    if serializer._glow:
+        createHook("glow", glow.glow)
+
+if __name__ == "__main__":
+    os.system("cls")
+    serializer.ReadJSON()
+
+    loadHooks()
 
     createHook("panel", panel.main)
+    createHook("rpc", rpc.StartRPC)
     createHook("termination", loopTermination)
 
     try:

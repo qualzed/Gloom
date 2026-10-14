@@ -42,6 +42,7 @@ while True:
     try:
         pm = pymem.Pymem("cs2.exe")
         client = pymem.process.module_from_name(pm.process_handle, "client.dll").lpBaseOfDll
+        print("[+] ESP has been loaded.")
         break
     except Exception as e:
         crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)

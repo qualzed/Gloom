@@ -1,6 +1,5 @@
 # Claude Code
 
-from colorama import Fore
 import math
 import struct
 import time
@@ -12,11 +11,14 @@ from src import entity
 from internal import crashlog
 
 TOGGLE_KEY = 0x05
-SMOOTH = 6.0
+SMOOTH = 4.0
 SENS = 1.0
 RADIUS = 0.08 # No more 0.5
 HEAD_BONE = 7
 enabled = None
+FPS_FIX = 0.001
+
+print("[+] Aim has been loaded.")
 
 def get_game_size():
     hwnd = win32gui.FindWindow(None, "Counter-Strike 2")
@@ -33,16 +35,22 @@ def world_to_screen(m, x, y, z, width, height):
     sy = height / 2 - height / 2 * (m[4] * x + m[5] * y + m[6] * z + m[7]) / w
     return sx, sy
 
+def valid_ptr(p):
+    return 0x10000 < p < 0x7FFFFFFFFFFF
+
 def head_position(pawn):
-    scene = pm.read_longlong(pawn + m_pGameSceneNode)
-    if not scene:
-        return None
+    try:
+        scene = pm.read_longlong(pawn + m_pGameSceneNode)
+        if not valid_ptr(scene):
+            return None
 
-    bones = pm.read_longlong(scene + m_modelState + 0x80)
-    if not bones:
-        return None
+        bones = pm.read_longlong(scene + m_modelState + 0x80)
+        if not valid_ptr(bones):
+            return None
 
-    return struct.unpack("3f", pm.read_bytes(bones + HEAD_BONE * 0x20, 12))
+        return struct.unpack("3f", pm.read_bytes(bones + HEAD_BONE * 0x20, 12))
+    except Exception:
+        return None
 
 def find_target(matrix, width, height):
     best, best_distance = None, height * RADIUS
@@ -75,7 +83,7 @@ def aim():
     was_down = False
 
     while True:
-        local_player = pm.read_longlong(client + dwLocalPlayerPawn)
+        time.sleep(0.0055)
 
         size = get_game_size()
         down = bool(win32api.GetAsyncKeyState(TOGGLE_KEY) & 0x8000)
@@ -84,23 +92,18 @@ def aim():
         was_down = down
 
         if not enabled or not size:
-            time.sleep(0.001)
             continue
 
         try:
-            if pm.read_uchar(local_player + m_lifeState) != 0:
+            local_player = pm.read_longlong(client + dwLocalPlayerPawn)
+            if not valid_ptr(local_player) or pm.read_uchar(local_player + m_lifeState) != 0:
                 continue
-        except Exception as e:
-            crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
-            pass
 
-        try:
             matrix = struct.unpack("16f", pm.read_bytes(client + dwViewMatrix, 64))
             target = find_target(matrix, *size)
             if target:
                 move_mouse(*target, size[1])
         except Exception as e:
             crashlog.catchError(e, __name__, e.__traceback__.tb_lineno)
-            continue
 
-        time.sleep(0.0055)
+        time.sleep(FPS_FIX)

@@ -6,7 +6,7 @@ import win32api, win32con, win32gui
 from imgui.integrations.glfw import GlfwRenderer
 from offsets import *
 from src import aim, esp, crosshair, playerState
-from src.ui import menu
+from src.ui import menu, windowctl
 from internal import serializer
 
 user32 = ctypes.windll.user32
@@ -72,7 +72,8 @@ def draw_functions_panel(dl, weight = None, height = None):
           (serializer._trigger, "TRIGGER"),
           (serializer._fov, "FOV"),
           (serializer._antismoke, "ANTISMOKE"),
-          (serializer._antiflash, "ANTIFLASH")
+          (serializer._antiflash, "ANTIFLASH"),
+          (serializer._bhop, "BHOP")
      ]
 
      for flag, name in features:
@@ -152,12 +153,12 @@ def main():
           imgui.WINDOW_NO_BACKGROUND
      )
 
-     script_menu = menu.Menu()
+     # script_menu = menu.Menu()
      menu_open = False
      shown = True
 
      while not glfw.window_should_close(window):
-          active = win32gui.GetForegroundWindow() == game_hwnd()
+          active = win32gui.GetForegroundWindow() in (game_hwnd(), hwnd)
 
           if active != shown:
                shown = active
@@ -167,6 +168,10 @@ def main():
                     glfw.hide_window(window)
 
           if not active:
+               # if menu_open:
+               #      menu_open = False
+               #      windowctl.set_clickable(hwnd, False)
+               #      io.mouse_draw_cursor = False
                glfw.poll_events()
                continue
 
@@ -176,6 +181,16 @@ def main():
                X, Y, W, H = rect
                glfw.set_window_pos(window, X, Y)
                glfw.set_window_size(window, W, H)
+
+          # down = bool(win32api.GetAsyncKeyState(win32con.VK_INSERT) & 0x8000)
+          # if down and not insert_down:
+          #      menu_open = not menu_open
+          #      windowctl.set_clickable(hwnd, menu_open)
+          #      windowctl.focus(hwnd if menu_open else game_hwnd())
+          #      if menu_open:
+          #           windowctl.release_cursor()
+          #      io.mouse_draw_cursor = menu_open
+          # insert_down = down
 
           glfw.poll_events()
           impl.process_inputs()
@@ -189,14 +204,6 @@ def main():
           if isPlanted():
                draw_bomb_panel(imgui.get_window_draw_list(), W, H)
 
-          if win32api.GetAsyncKeyState(win32con.VK_INSERT) & 1:
-               serializer.ReadJSON()
-
-          # if win32api.GetAsyncKeyState(win32con.VK_INSERT) & 1:
-          #      menu_open = not menu_open
-          # if menu_open:
-          #      script_menu.draw(imgui.get_window_draw_list(), W, H)
-
           if playerState.IsInGame():
                crosshair.drawCrosshair(imgui.get_window_draw_list())
                if aim.enabled:
@@ -206,6 +213,10 @@ def main():
                esp.draw_frame(imgui.get_window_draw_list())
 
           imgui.end()
+
+          # if menu_open:
+          #      script_menu.draw(imgui.get_window_draw_list(), W, H)
+
           imgui.end_frame()
 
           gl.glClearColor(0, 0, 0, 0)

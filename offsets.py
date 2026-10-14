@@ -2,7 +2,7 @@ import pymem
 import pymem.process
 import requests
 
-BASE_URL = 'https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/'
+BASE_URL = 'https://raw.githubusercontent.com/qualzed/cs2dumps/main/output/'
 
 pm = pymem.Pymem("cs2.exe")
 client = pymem.process.module_from_name(pm.process_handle, "client.dll").lpBaseOfDll

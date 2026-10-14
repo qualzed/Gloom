@@ -1,0 +1,3 @@
+Error catched in: src.aim
+Error on line: 98
+Could not read memory at: 4896673676116, length: 1 - GetLastError: 299

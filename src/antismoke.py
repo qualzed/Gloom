@@ -13,7 +13,7 @@ def resolve_flag():
 
 def nosmoke():
     flag = resolve_flag()
-
+    print("[+] Anti-smoke has been loaded.")
     while True:
         time.sleep(0.05)
 
