@@ -91,7 +91,7 @@ Each worker has its own tick interval, so a slow feature can never stall a fast 
 ## Installation
 
 ```bash
-git clone https://github.com/<your-name>/Gloom.git
+git clone https://github.com/qualzed/Gloom.git
 cd Gloom
 venv.bat
 pip install -r requirements.txt
@@ -186,6 +186,5 @@ Gloom is an unofficial third-party tool with no affiliation to the game's develo
 
 <div align="center">
 
-**Written in Python. Stays out of the way.**
-
 </div>
+AI's readme 🙂
