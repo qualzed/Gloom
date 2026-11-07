@@ -168,7 +168,7 @@ Gloom/
 
 ## Updating Offsets
 
-Offsets rot with every game patch. When something stops working after an update, `offsets.py` is the only file you need to touch — `scanner.py` handles base resolution, so in most cases only the signatures have to be refreshed.
+This Source Code uses my cs2dumps repo, so you better change URL in offsets.py on [a2x/cs2-dumper](https://github.com/a2x/cs2-dumper)
 
 ---
 
