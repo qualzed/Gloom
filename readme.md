@@ -133,13 +133,12 @@ The menu doesn't work (probably, I don't remember)
 ```
 Gloom/
 ├── assets/                # font.ttf, csgo_icons.ttf
-├── crashes/               # generated at runtime, not tracked
-├── images/                # screenshots used in this README
+├── crashes/
 ├── internal/
 │   ├── crashlog.py        # crash capture into crashes/
 │   ├── header.py
 │   ├── log.py
-│   ├── rpc.py             # JSON-RPC 2.0 over HTTP
+│   ├── rpc.py
 │   └── serializer.py
 ├── src/
 │   ├── ui/                # menu.py, panel.py, settings.py, windowctl.py
